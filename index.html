@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>翻牌记忆游戏</title>
+  <style>
+    /* ======== CSS 样式 ======== */
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .scoreboard {
+      margin: 10px 0;
+    }
+    #grid {
+      /* 4 列 x 4 行，共 16 张卡牌 */
+      display: inline-grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+      margin-top: 20px;
+    }
+    #grid img {
+      width: 100px;
+      height: 100px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    /* 完成后的提示样式 */
+    #result {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>翻牌记忆游戏</h1>
+  
+  <!-- 记分板：显示步数和匹配进度 -->
+  <div class="scoreboard">
+    <span id="stepsCount">步数: 0</span> |
+    <span id="pairsCount">配对: 0/8</span>
+  </div>
+
+  <!-- 用来放卡牌的容器 -->
+  <div id="grid"></div>
+
+  <script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // 1. 定义卡牌数组（8 对，共 16 张）
+      const cardArray = [
+        { name: 'D500032',    img: 'images/D500032.png' },
+        { name: 'D500032',    img: 'images/D500032.png' },
+        { name: 'D500033', img: 'images/D500033.png' },
+        { name: 'D500033', img: 'images/D500033.png' },
+        { name: 'FZ4000',    img: 'images/FZ4000.png' },
+        { name: 'FZ4000',    img: 'images/FZ4000.png' },
+        { name: 'G5',     img: 'images/G5.png' },
+        { name: 'G5',     img: 'images/G5.png' },
+        { name: 'G9',   img: 'images/G9.png' },
+        { name: 'G9',   img: 'images/G9.png' },
+        { name: 'G11',    img: 'images/G11.png' },
+        { name: 'G11',    img: 'images/G11.png' },
+        { name: 'G30035',    img: 'images/G30035.png' },
+        { name: 'G30035',    img: 'images/G30035.png' },
+        { name: 'Q38',   img: 'images/Q38.png' },
+        { name: 'Q38',   img: 'images/Q38.png' }
+      ];
+
+      // 2. 随机洗牌
+      cardArray.sort(() => 0.5 - Math.random());
+
+      // 3. 获取 DOM 元素
+      const grid = document.querySelector('#grid');
+      const stepsCount = document.getElementById('stepsCount');
+      const pairsCount = document.getElementById('pairsCount');
+
+      // 记录状态
+      let cardsChosen = [];      // 记录翻开的卡牌名称
+      let cardsChosenId = [];    // 记录翻开的卡牌索引
+      let pairsFound = 0;        // 成功匹配的对数
+      let steps = 0;             // 步数（每翻两张算一次）
+      const totalPairs = cardArray.length / 2; // 总共 8 对
+
+      // 更新记分板
+      function updateScoreboard() {
+        stepsCount.textContent = '步数: ' + steps;
+        pairsCount.textContent = '配对: ' + pairsFound + '/' + totalPairs;
+      }
+
+      // 4. 创建卡牌界面
+      function createBoard() {
+        cardArray.forEach((card, index) => {
+          const cardElement = document.createElement('img');
+          // 初始显示卡牌背面
+          cardElement.setAttribute('src', 'images/back.png');
+          cardElement.setAttribute('data-id', index);
+          cardElement.addEventListener('click', flipCard);
+          grid.appendChild(cardElement);
+        });
+      }
+
+      // 5. 翻牌函数
+      function flipCard() {
+        // 如果已经翻了 2 张牌，则忽略点击
+        if (cardsChosen.length === 2) return;
+
+        const cardId = this.getAttribute('data-id');
+        // 防止重复点击同一张牌
+        if (cardsChosenId.includes(cardId)) return;
+
+        // 显示卡牌正面
+        this.setAttribute('src', cardArray[cardId].img);
+        cardsChosen.push(cardArray[cardId].name);
+        cardsChosenId.push(cardId);
+
+        // 如果翻了 2 张，计步并检查匹配
+        if (cardsChosen.length === 2) {
+          steps++;
+          setTimeout(checkForMatch, 500);
+        }
+      }
+
+      // 6. 检查两张卡牌是否匹配
+      function checkForMatch() {
+        const cards = document.querySelectorAll('#grid img');
+        const optionOneId = cardsChosenId[0];
+        const optionTwoId = cardsChosenId[1];
+
+        // 如果点击了同一张牌，两次都翻回背面
+        if (optionOneId === optionTwoId) {
+          cards[optionOneId].setAttribute('src', 'images/back.png');
+        } 
+        // 如果匹配成功
+        else if (cardsChosen[0] === cardsChosen[1]) {
+          // 成功匹配后显示 blank 图片
+          cards[optionOneId].setAttribute('src', 'images/blank.png');
+          cards[optionTwoId].setAttribute('src', 'images/blank.png');
+          // 移除点击事件，避免重复点击
+          cards[optionOneId].removeEventListener('click', flipCard);
+          cards[optionTwoId].removeEventListener('click', flipCard);
+          pairsFound++;
+        } 
+        // 不匹配，则翻回背面
+        else {
+          cards[optionOneId].setAttribute('src', 'images/back.png');
+          cards[optionTwoId].setAttribute('src', 'images/back.png');
+        }
+
+        // 清空临时选择
+        cardsChosen = [];
+        cardsChosenId = [];
+        updateScoreboard();
+
+        // 如果所有卡牌全部匹配成功，显示完成界面
+        if (pairsFound === totalPairs) {
+          showResult();
+        }
+      }
+
+      // 7. 显示最终完成界面
+      function showResult() {
+        // 清空游戏区
+        grid.innerHTML = '';
+        // 创建并显示恭喜界面
+        const resultDiv = document.createElement('div');
+        resultDiv.id = 'result';
+        resultDiv.innerHTML = `
+          <h2>恭喜你，全部配对成功！</h2>
+          <p>总步数：${steps}</p>
+        `;
+        document.body.appendChild(resultDiv);
+      }
+
+      // 初始化
+      createBoard();
+      updateScoreboard();
+    });
+  </script>
+</body>
+</html>
